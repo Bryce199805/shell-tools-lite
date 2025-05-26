@@ -65,17 +65,17 @@ watchx nvidia-smi      # Run "nvidia-smi" every 1 second using watch
 
 
 ## Installation
-1.Clone the repository
+1. Clone the repository
 ```bash
 git clone https://github.com/shell-tools-lite/shell-tools-lite.git
 ```
 
-2.Add `bin` directory to your PATH by adding this line to your shell config (`~/.bashrc` or `~/.zshrc`):
+2. Add `bin` directory to your PATH by adding this line to your shell config (`~/.bashrc` or `~/.zshrc`):
 ```bash
 export PATH="$HOME/shell-tools-lite/bin:$PATH"
 ```
 
-3.Reload your shell
+3. Reload your shell
 ```bash
 source ~/.bashrc  # or source ~/.zshrc
 ```
