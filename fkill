@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# 检查是否传入进程名或PID
+if [ -z "$1" ]; then
+    echo "Usage: fkill <PID or process_name>"
+    exit 1
+fi
+
+# 如果传入的是进程名，先查找PID
+if [[ "$1" =~ ^[0-9]+$ ]]; then
+    # 传入的是PID，直接杀死
+    kill -KILL "$1" && echo "Process with PID $1 has been killed."
+else
+    # 传入的是进程名，查找并杀死匹配的进程
+    pkill -KILL "$1" && echo "Processes matching '$1' have been killed."
+fi
+

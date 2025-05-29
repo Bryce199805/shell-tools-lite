@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# 获取用户参数，默认为当前用户
+USER_NAME=${1:-$USER}
+
+# 获取筛选条件（如果有）
+FILTER=${2:-""}
+
+# 显示该用户的进程，按 CPU 占用降序排序，并根据筛选条件（如果有）过滤
+if [ -z "$FILTER" ]; then
+    # 如果没有提供筛选条件，显示所有进程
+    ps -u "$USER_NAME" -o pid,ppid,%cpu,%mem,etime,cmd --sort=-%cpu
+else
+    # 如果有筛选条件，使用 grep 过滤
+    ps -u "$USER_NAME" -o pid,ppid,%cpu,%mem,etime,cmd --sort=-%cpu | grep --color=auto "$FILTER"
+fi
+

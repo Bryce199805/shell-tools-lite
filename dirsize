@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# 默认选择当前目录
+DIRECTORY=${1:-$(pwd)}
+
+# 显示文件夹总大小
+echo "Total folder size:"
+du -sh "$DIRECTORY" 2>/dev/null  # 显示总大小，忽略错误
+
+# 显示子目录大小，限制为一级子目录
+echo "Subdirectory sizes (1-level):"
+du -sh "$DIRECTORY"/* 2>/dev/null  # 显示每个子目录的大小
+

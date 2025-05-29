@@ -1,0 +1,29 @@
+#!/bin/bash
+
+if [ -z "$1" ]; then
+    echo "Usage: up <script.sh>"
+    exit 1
+fi
+
+SCRIPT="$1"
+
+if [ ! -f "$SCRIPT" ]; then
+    echo "❌ Error: script '$SCRIPT' not found."
+    exit 1
+fi
+
+# 创建日志目录
+LOGDIR="./logs"
+mkdir -p "$LOGDIR"
+
+# 去除 .sh 后缀生成日志文件名
+SCRIPT_NAME=$(basename "$SCRIPT" .sh)
+LOGFILE="$LOGDIR/${SCRIPT_NAME}.log"
+
+# 后台运行
+nohup bash "$SCRIPT" > "$LOGFILE" 2>&1 &
+
+PID=$!
+echo "✅ Started '$SCRIPT' in background (PID $PID)"
+echo "📄 Log: $LOGFILE"
+
