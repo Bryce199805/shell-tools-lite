@@ -1,6 +1,7 @@
 #!/bin/bash
 
-LINES=${1:-12}
+INPUT=${1:-10}
+LINES=$((INPUT + 2))
 
 # 执行 watch 命令
 watch -n 1 "nvidia-smi pmon | head -n $LINES"
