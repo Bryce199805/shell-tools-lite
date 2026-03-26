@@ -1,13 +1,26 @@
 #!/bin/bash
 
 # 查看 GPU 运行进程的用户信息
+# 默认紧凑输出，加 -l 或 --long 参数显示完整命令
 
-# 使用 printf 格式化输出，设置固定宽度
+LONG_MODE=${1:-""}
+
+if [ "$LONG_MODE" = "-l" ] || [ "$LONG_MODE" = "--long" ]; then
+    # 长模式：完整命令
+    cmd_len=100
+    separator="------------------------------------------------------------------------------------------------------------------------"
+else
+    # 默认：紧凑模式，约80字符宽度
+    cmd_len=25
+    separator="--------------------------------------------------------------------------------"
+fi
+
+# 使用 printf 格式化输出
 format="%-3s %-7s %-14s %-6s %-4s %-4s %-5s %-9s %s\n"
 
 # 打印表头
 printf "$format" "GPU" "PID" "USER" "GMEM" "MEM" "CPU" "STAT" "TIME" "CMD"
-echo "----------------------------------------------------------------------------------------------------"
+echo "$separator"
 
 # 使用 nvidia-smi 获取进程信息，并关联用户
 nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,nounits 2>/dev/null | while read -r line; do
@@ -30,7 +43,7 @@ nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,n
         # 获取运行时间
         time=$(ps -o etime= -p "$pid" 2>/dev/null | xargs)
         # 获取启动命令并截断
-        cmd=$(ps -o args= -p "$pid" 2>/dev/null | cut -c1-60)
+        cmd=$(ps -o args= -p "$pid" 2>/dev/null | cut -c1-$cmd_len)
 
         if [ -n "$user" ]; then
             printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" "$mem" "$cpu" "$stat" "$time" "$cmd"
