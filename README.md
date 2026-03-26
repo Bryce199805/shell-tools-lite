@@ -9,8 +9,10 @@ A lightweight collection of handy shell utilities for Linux productivity, includ
 | `dirsize` | Show directory sizes including subdirectories.  |
 | `fkill`   | Force kill processes by PID (like `kill -9`).   |
 | `gpu-mon` | Real-time GPU process monitoring with `nvidia-smi pmon`. |
+| `gpu-pid` | Show GPU process user info with CPU/MEM usage.  |
 | `gpu-smi` | Quick snapshot of GPU usage (top lines).        |
 | `pinfo`   | Show detailed information of a process by PID.  |
+| `pmem`    | Show memory and resource usage for a process.   |
 | `psx`     | Enhanced `ps` filtering by user and keyword.    |
 | `up`      | Run shell scripts in background with logging.   |
 | `watchx`  | Simplified wrapper for `watch -n 1 "<command>"`.|
@@ -36,6 +38,11 @@ gpu-mon                # Monitor GPU every second, defalut 12 rows
 gpu-mon 8              # Optional: show top 8 lines  
 ```
 
+### gpu-pid
+```bash
+gpu-pid                # Show all GPU processes with user info and resource usage
+```
+
 ### gpu-smi
 ```bash
 gpu-smi                # Monitor GPU every second
@@ -44,6 +51,11 @@ gpu-smi                # Monitor GPU every second
 ### pinfo
 ```bash
 pinfo 12345            # Show detailed info for process with PID 12345
+```
+
+### pmem
+```bash
+pmem 12345             # Show memory and resource usage for process with PID 12345
 ```
 
 ### psx
