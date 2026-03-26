@@ -3,10 +3,10 @@
 # 查看 GPU 运行进程的用户信息
 
 # 使用 printf 格式化输出，设置固定宽度
-format="%-8s %-4s %-12s %-8s %-6s %-6s %-8s %s\n"
+format="%-4s %-8s %-12s %-8s %-6s %-6s %-8s %s\n"
 
 # 打印表头
-printf "$format" "PID" "GPU" "USER" "GPU_MEM" "MEM" "CPU" "STAT" "NAME"
+printf "$format" "GPU" "PID" "USER" "GPU_MEM" "MEM" "CPU" "STAT" "NAME"
 echo "--------------------------------------------------------------------------------"
 
 # 使用 nvidia-smi 获取进程信息，并关联用户
@@ -31,7 +31,7 @@ nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,n
         stat=$(ps -o stat= -p "$pid" 2>/dev/null | xargs)
 
         if [ -n "$user" ]; then
-            printf "$format" "$pid" "$gpu_id" "$user" "${gpu_mem}M" "$mem" "$cpu" "$stat" "$name"
+            printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" "$mem" "$cpu" "$stat" "$name"
         fi
     fi
 done
