@@ -16,7 +16,7 @@ else
 fi
 
 # 使用 printf 格式化输出
-format="%-3s %-7s %-14s %-6s %-4s %-4s %-5s %-9s %s\n"
+format="%-3s %-7s %-12s %-6s %-4s %-4s %-5s %-11s %s\n"
 
 # 打印表头
 printf "$format" "GPU" "PID" "USER" "GMEM" "MEM" "CPU" "STAT" "TIME" "CMD"
