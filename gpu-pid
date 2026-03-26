@@ -3,11 +3,11 @@
 # 查看 GPU 运行进程的用户信息
 
 # 使用 printf 格式化输出，设置固定宽度
-format="%-4s %-8s %-12s %-8s %-6s %-6s %-8s %-10s %s\n"
+format="%-3s %-7s %-14s %-6s %-4s %-4s %-5s %-9s %s\n"
 
 # 打印表头
-printf "$format" "GPU" "PID" "USER" "GPU_MEM" "MEM" "CPU" "STAT" "TIME" "CMD"
-echo "--------------------------------------------------------------------------------"
+printf "$format" "GPU" "PID" "USER" "GMEM" "MEM" "CPU" "STAT" "TIME" "CMD"
+echo "----------------------------------------------------------------------------------------------------"
 
 # 使用 nvidia-smi 获取进程信息，并关联用户
 nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,nounits 2>/dev/null | while read -r line; do
@@ -21,8 +21,6 @@ nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,n
     if [ -n "$pid" ] && [ "$pid" != "No running" ]; then
         # 获取进程用户
         user=$(ps -o user= -p "$pid" 2>/dev/null)
-        # 获取进程名称
-        name=$(ps -o comm= -p "$pid" 2>/dev/null)
         # 获取 CPU 和内存占用
         cpu_mem=$(ps -o %cpu,%mem --no-headers -p "$pid" 2>/dev/null)
         cpu=$(echo "$cpu_mem" | awk '{print $1}')
@@ -32,7 +30,7 @@ nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,n
         # 获取运行时间
         time=$(ps -o etime= -p "$pid" 2>/dev/null | xargs)
         # 获取启动命令并截断
-        cmd=$(ps -o args= -p "$pid" 2>/dev/null | cut -c1-50)
+        cmd=$(ps -o args= -p "$pid" 2>/dev/null | cut -c1-60)
 
         if [ -n "$user" ]; then
             printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" "$mem" "$cpu" "$stat" "$time" "$cmd"
