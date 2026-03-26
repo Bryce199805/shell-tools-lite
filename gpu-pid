@@ -3,16 +3,20 @@
 # 查看 GPU 运行进程的用户信息
 
 # 使用 printf 格式化输出，设置固定宽度
-format="%-8s %-12s %-8s %-6s %-6s %-8s %s\n"
+format="%-8s %-4s %-12s %-8s %-6s %-6s %-8s %s\n"
 
 # 打印表头
-printf "$format" "PID" "USER" "GPU_MEM" "MEM" "CPU" "STAT" "NAME"
-echo "--------------------------------------------------------------------------"
+printf "$format" "PID" "GPU" "USER" "GPU_MEM" "MEM" "CPU" "STAT" "NAME"
+echo "--------------------------------------------------------------------------------"
 
 # 使用 nvidia-smi 获取进程信息，并关联用户
-nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader,nounits 2>/dev/null | while read -r line; do
+nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,nounits 2>/dev/null | while read -r line; do
     pid=$(echo "$line" | cut -d',' -f1 | tr -d ' ')
-    gpu_mem=$(echo "$line" | cut -d',' -f2 | tr -d ' ')
+    gpu_uuid=$(echo "$line" | cut -d',' -f2 | tr -d ' ')
+    gpu_mem=$(echo "$line" | cut -d',' -f3 | tr -d ' ')
+
+    # 根据 UUID 获取 GPU 编号
+    gpu_id=$(nvidia-smi --query-gpu=index --id="$gpu_uuid" --format=csv,noheader 2>/dev/null | tr -d ' ')
 
     if [ -n "$pid" ] && [ "$pid" != "No running" ]; then
         # 获取进程用户
@@ -27,7 +31,7 @@ nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader,nounits 2>
         stat=$(ps -o stat= -p "$pid" 2>/dev/null | xargs)
 
         if [ -n "$user" ]; then
-            printf "$format" "$pid" "$user" "${gpu_mem}M" "$mem" "$cpu" "$stat" "$name"
+            printf "$format" "$pid" "$gpu_id" "$user" "${gpu_mem}M" "$mem" "$cpu" "$stat" "$name"
         fi
     fi
 done
