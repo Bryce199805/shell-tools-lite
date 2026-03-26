@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# 查看 GPU 运行进程的用户信息
+
+# 获取 GPU 进程信息并显示用户
+echo -e "PID\tUSER\tGPU_MEM\tTYPE\tNAME"
+echo "----------------------------------------"
+
+# 使用 nvidia-smi 获取进程信息，并关联用户
+nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader,nounits 2>/dev/null | while read -r line; do
+    pid=$(echo "$line" | cut -d',' -f1 | tr -d ' ')
+    gpu_mem=$(echo "$line" | cut -d',' -f2 | tr -d ' ')
+
+    if [ -n "$pid" ] && [ "$pid" != "No running" ]; then
+        # 获取进程用户
+        user=$(ps -o user= -p "$pid" 2>/dev/null)
+        # 获取进程名称
+        name=$(ps -o comm= -p "$pid" 2>/dev/null)
+        # 判断进程类型
+        type=$(ps -o tty= -p "$pid" 2>/dev/null | xargs)
+        [ -z "$type" ] || [ "$type" = "?" ] && type="daemon" || type="tty"
+
+        if [ -n "$user" ]; then
+            printf "%s\t%s\t%sM\t%s\t%s\n" "$pid" "$user" "$gpu_mem" "$type" "$name"
+        fi
+    fi
+done

@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# 查看某个进程的内存等资源占用信息
+
+if [ -z "$1" ]; then
+    echo "Usage: pmem <PID>"
+    echo "  显示指定进程的详细资源占用信息"
+    exit 1
+fi
+
+PID=$1
+
+# 检查进程是否存在
+if ! ps -p "$PID" > /dev/null 2>&1; then
+    echo "Error: 进程 $PID 不存在"
+    exit 1
+fi
+
+echo "=========================================="
+echo "进程资源占用信息 (PID: $PID)"
+echo "=========================================="
+
+# 基本信息
+echo -e "\n【基本信息】"
+ps -p "$PID" -o pid,ppid,user,tty,stat,start,time,comm --no-headers | \
+    awk '{printf "PID:     %s\nPPID:    %s\n用户:    %s\n终端:    %s\n状态:    %s\n启动:    %s\n时间:    %s\n命令:    %s\n", $1, $2, $3, $4, $5, $6, $7, $8}'
+
+# CPU 和内存占用
+echo -e "\n【资源占用】"
+ps -p "$PID" -o %cpu,%mem,rss,vsz --no-headers | \
+    awk '{printf "CPU:     %s%%\n内存:    %s%%\nRSS:     %s KB (%.1f MB)\nVSZ:     %s KB (%.1f MB)\n", $1, $2, $3, $3/1024, $4, $4/1024}'
+
+# 完整命令行
+echo -e "\n【完整命令】"
+cmd=$(ps -p "$PID" -o cmd --no-headers)
+echo "$cmd"
+
+# 线程数
+echo -e "\n【线程数】"
+threads=$(ps -p "$PID" -o nlwp --no-headers | xargs)
+echo "线程数: $threads"
+
+# 打开的文件数
+echo -e "\n【打开文件数】"
+files=$(ls /proc/$PID/fd 2>/dev/null | wc -l)
+echo "文件描述符: $files"
+
+echo ""
