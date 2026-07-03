@@ -14,6 +14,7 @@ A lightweight collection of handy shell utilities for Linux productivity, includ
 | `pinfo`   | Show detailed information of a process by PID.  |
 | `pmem`    | Show memory and resource usage for a process.   |
 | `psx`     | Enhanced `ps` filtering by user and keyword.    |
+| `userlist`| List regular local users with UID, GID, home, and shell. |
 | `up`      | Run shell scripts in background with logging.   |
 | `watchx`  | Simplified wrapper for `watch -n 1 "<command>"`.|
 
@@ -65,6 +66,11 @@ psx python             # Show current user's processes filtered by "python"
 psx root ssh           # Show user root's processes filtered by "ssh"
 ```
 
+### userlist
+```bash
+userlist               # List regular local users
+```
+
 ### up
 ```bash
 up script.sh           # Run script.sh in background, logging output to logs/script.log
@@ -91,4 +97,3 @@ export PATH="$HOME/shell-tools-lite/bin:$PATH"
 ```bash
 source ~/.bashrc  # or source ~/.zshrc
 ```
-
