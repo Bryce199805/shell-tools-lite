@@ -1,11 +1,72 @@
 #!/bin/bash
 
 # 查看 GPU 运行进程的用户信息
-# 默认紧凑输出，加 -l 或 --long 参数显示完整命令
+# 默认保留 nvidia-smi 的进程顺序；可选长命令和排序参数。
 
-LONG_MODE=${1:-""}
+LONG_MODE=false
+SORT_KEY=""
 
-if [ "$LONG_MODE" = "-l" ] || [ "$LONG_MODE" = "--long" ]; then
+usage() {
+    cat <<'EOF'
+Usage: gpu-pid [-l|--long] [-s|--sort KEY]
+
+Sort keys (descending): gmem, ram, ram+, mem, cpu
+Without --sort, preserve the process order returned by nvidia-smi.
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -l|--long)
+            LONG_MODE=true
+            shift
+            ;;
+        -s|--sort)
+            if [ -z "${2:-}" ]; then
+                echo "Error: $1 requires a sort key" >&2
+                usage >&2
+                exit 2
+            fi
+            SORT_KEY=${2,,}
+            shift 2
+            ;;
+        --sort=*)
+            SORT_KEY=${1#*=}
+            if [ -z "$SORT_KEY" ]; then
+                echo "Error: --sort requires a sort key" >&2
+                usage >&2
+                exit 2
+            fi
+            SORT_KEY=${SORT_KEY,,}
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "Error: unknown option: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+    esac
+done
+
+case "$SORT_KEY" in
+    "") sort_field="" ;;
+    ram+) sort_field=1 ;;
+    ram)  sort_field=2 ;;
+    gmem) sort_field=6 ;;
+    mem)  sort_field=7 ;;
+    cpu)  sort_field=8 ;;
+    *)
+        echo "Error: invalid sort key: $SORT_KEY" >&2
+        usage >&2
+        exit 2
+        ;;
+esac
+
+if $LONG_MODE; then
     # 长模式：完整命令
     cmd_len=150
     separator="------------------------------------------------------------------------------------------------------------------------------------------------"
@@ -56,13 +117,8 @@ tree_rss_kb() {
     ' <<< "$process_table"
 }
 
-# 第一列为进程树 RSS，供 sort 数值排序。
-while IFS=$'\t' read -r tree_kb rss_kb gpu_id pid user gpu_mem mem cpu stat time cmd; do
-    [ -n "$pid" ] || continue
-    printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" \
-        "$(human_kb "$rss_kb")" "$(human_kb "$tree_kb")" \
-        "$mem" "$cpu" "$stat" "$time" "$cmd"
-done < <(
+# 输出内部记录；数值字段置于前部，供可选排序使用。
+gpu_records() {
 while read -r line; do
     pid=$(echo "$line" | cut -d',' -f1 | tr -d ' ')
     gpu_uuid=$(echo "$line" | cut -d',' -f2 | tr -d ' ')
@@ -94,4 +150,17 @@ while read -r line; do
         fi
     fi
 done < <(nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,nounits 2>/dev/null)
-) | sort -t $'\t' -k1,1nr
+}
+
+while IFS=$'\t' read -r tree_kb rss_kb gpu_id pid user gpu_mem mem cpu stat time cmd; do
+    [ -n "$pid" ] || continue
+    printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" \
+        "$(human_kb "$rss_kb")" "$(human_kb "$tree_kb")" \
+        "$mem" "$cpu" "$stat" "$time" "$cmd"
+done < <(
+    if [ -n "$sort_field" ]; then
+        gpu_records | sort -s -t $'\t' -k"$sort_field","$sort_field"nr
+    else
+        gpu_records
+    fi
+)

@@ -42,10 +42,13 @@ gpu-mon 8              # Optional: show top 8 lines
 ### gpu-pid
 ```bash
 gpu-pid                # Show all GPU processes with user info and resource usage
+gpu-pid --sort ram+    # Sort by process-tree RAM usage (descending)
+gpu-pid -s gmem -l     # Sort by GPU memory and show the longer command
 ```
 
-GPU processes are sorted by `RAM+` from highest to lowest. `RAM` is the GPU PID's
-own RSS; `RAM+` adds the RSS of all its descendant processes, such as data-loader
+By default, GPU processes retain the order returned by `nvidia-smi`. Use `--sort`
+with `gmem`, `ram`, `ram+`, `mem`, or `cpu` for descending numeric order. `RAM` is
+the GPU PID's own RSS; `RAM+` adds all descendant processes, such as data-loader
 workers. `MEM%` remains the GPU PID's own percentage of host RAM.
 
 ### gpu-smi
