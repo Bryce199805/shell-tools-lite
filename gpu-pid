@@ -69,18 +69,21 @@ esac
 if $LONG_MODE; then
     # 长模式：完整命令
     cmd_len=150
-    separator="------------------------------------------------------------------------------------------------------------------------------------------------"
+    separator="----------------------------------------------------------------------------------------------------------------------------------------------"
+    format="%-3s %-7s %-12s %-7s %-5s %-5s %-5s %-5s %-5s %-11s %s\n"
 else
-    # 默认：紧凑模式
+    # 默认：紧凑模式，不显示命令
     cmd_len=25
-    separator="------------------------------------------------------------------------------------------------"
+    separator="--------------------------------------------------------------------------"
+    format="%-3s %-7s %-12s %-7s %-5s %-5s %-5s %-5s %-5s %s\n"
 fi
 
-# 使用 printf 格式化输出
-format="%-3s %-7s %-12s %-7s %-5s %-7s %-5s %-5s %-5s %-11s %s\n"
-
 # 打印表头
-printf "$format" "GPU" "PID" "USER" "GMEM" "RAM" "RAM+" "MEM%" "CPU%" "STAT" "TIME" "CMD"
+if $LONG_MODE; then
+    printf "$format" "GPU" "PID" "USER" "GMEM" "RAM" "RAM+" "MEM%" "CPU%" "STAT" "TIME" "CMD"
+else
+    printf "$format" "GPU" "PID" "USER" "GMEM" "RAM" "RAM+" "MEM%" "CPU%" "STAT" "TIME"
+fi
 echo "$separator"
 
 # 将 KiB 转为便于比较的 IEC 单位。
@@ -139,8 +142,12 @@ while read -r line; do
         stat=$(ps -o stat= -p "$pid" 2>/dev/null | xargs)
         # 获取运行时间
         time=$(ps -o etime= -p "$pid" 2>/dev/null | xargs)
-        # 获取启动命令并截断
-        cmd=$(ps -o args= -p "$pid" 2>/dev/null | cut -c1-$cmd_len)
+        # 仅长模式获取启动命令并截断
+        if $LONG_MODE; then
+            cmd=$(ps -o args= -p "$pid" 2>/dev/null | cut -c1-$cmd_len)
+        else
+            cmd=""
+        fi
 
         if [ -n "$user" ]; then
             tree_kb=$(tree_rss_kb "$pid")
@@ -154,9 +161,15 @@ done < <(nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,n
 
 while IFS=$'\t' read -r tree_kb rss_kb gpu_id pid user gpu_mem mem cpu stat time cmd; do
     [ -n "$pid" ] || continue
-    printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" \
-        "$(human_kb "$rss_kb")" "$(human_kb "$tree_kb")" \
-        "$mem" "$cpu" "$stat" "$time" "$cmd"
+    if $LONG_MODE; then
+        printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" \
+            "$(human_kb "$rss_kb")" "$(human_kb "$tree_kb")" \
+            "$mem" "$cpu" "$stat" "$time" "$cmd"
+    else
+        printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" \
+            "$(human_kb "$rss_kb")" "$(human_kb "$tree_kb")" \
+            "$mem" "$cpu" "$stat" "$time"
+    fi
 done < <(
     if [ -n "$sort_field" ]; then
         gpu_records | sort -s -t $'\t' -k"$sort_field","$sort_field"nr

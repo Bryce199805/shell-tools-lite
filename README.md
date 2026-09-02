@@ -41,9 +41,9 @@ gpu-mon 8              # Optional: show top 8 lines
 
 ### gpu-pid
 ```bash
-gpu-pid                # Show all GPU processes with user info and resource usage
+gpu-pid                # Show GPU processes and resource usage without commands
 gpu-pid --sort ram+    # Sort by process-tree RAM usage (descending)
-gpu-pid -s gmem -l     # Sort by GPU memory and show the longer command
+gpu-pid -s gmem -l     # Sort by GPU memory and include the longer command
 ```
 
 By default, GPU processes retain the order returned by `nvidia-smi`. Use `--sort`
