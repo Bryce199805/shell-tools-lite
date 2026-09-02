@@ -44,6 +44,10 @@ gpu-mon 8              # Optional: show top 8 lines
 gpu-pid                # Show all GPU processes with user info and resource usage
 ```
 
+GPU processes are sorted by `TREE-RAM` from highest to lowest. `SELF-RAM` is the
+GPU PID's own RSS; `TREE-RAM` adds the RSS of all its descendant processes, such
+as data-loader workers. `MEM%` remains the GPU PID's own percentage of host RAM.
+
 ### gpu-smi
 ```bash
 gpu-smi                # Monitor GPU every second

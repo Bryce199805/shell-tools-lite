@@ -8,22 +8,62 @@ LONG_MODE=${1:-""}
 if [ "$LONG_MODE" = "-l" ] || [ "$LONG_MODE" = "--long" ]; then
     # 长模式：完整命令
     cmd_len=150
-    separator="-------------------------------------------------------------------------------------------------------------------------------"
+    separator="------------------------------------------------------------------------------------------------------------------------------------------------"
 else
-    # 默认：紧凑模式，约80字符宽度
+    # 默认：紧凑模式
     cmd_len=25
-    separator="--------------------------------------------------------------------------------"
+    separator="------------------------------------------------------------------------------------------------"
 fi
 
 # 使用 printf 格式化输出
-format="%-3s %-7s %-12s %-6s %-4s %-4s %-5s %-11s %s\n"
+format="%-3s %-7s %-12s %-7s %-8s %-8s %-5s %-5s %-5s %-11s %s\n"
 
 # 打印表头
-printf "$format" "GPU" "PID" "USER" "GMEM" "MEM" "CPU" "STAT" "TIME" "CMD"
+printf "$format" "GPU" "PID" "USER" "GMEM" "SELF-RAM" "TREE-RAM" "MEM%" "CPU%" "STAT" "TIME" "CMD"
 echo "$separator"
 
-# 使用 nvidia-smi 获取进程信息，并关联用户
-nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,nounits 2>/dev/null | while read -r line; do
+# 将 KiB 转为便于比较的 IEC 单位。
+human_kb() {
+    awk -v kb="$1" 'BEGIN {
+        if (kb >= 1048576) printf "%.1fG", kb / 1048576
+        else if (kb >= 1024) printf "%.1fM", kb / 1024
+        else printf "%dK", kb
+    }'
+}
+
+# 一次性获取 PID、PPID 和 RSS，后续从同一个快照计算每棵进程树。
+process_table=$(ps -e -o pid=,ppid=,rss= 2>/dev/null)
+
+tree_rss_kb() {
+    awk -v root="$1" '
+        { parent[$1]=$2; rss[$1]=$3 }
+        END {
+            included[root]=1
+            total=rss[root]+0
+            changed=1
+            while (changed) {
+                changed=0
+                for (pid in parent) {
+                    if (!included[pid] && included[parent[pid]]) {
+                        included[pid]=1
+                        total+=rss[pid]
+                        changed=1
+                    }
+                }
+            }
+            print total
+        }
+    ' <<< "$process_table"
+}
+
+# 第一列为进程树 RSS，供 sort 数值排序。
+while IFS=$'\t' read -r tree_kb rss_kb gpu_id pid user gpu_mem mem cpu stat time cmd; do
+    [ -n "$pid" ] || continue
+    printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" \
+        "$(human_kb "$rss_kb")" "$(human_kb "$tree_kb")" \
+        "$mem" "$cpu" "$stat" "$time" "$cmd"
+done < <(
+while read -r line; do
     pid=$(echo "$line" | cut -d',' -f1 | tr -d ' ')
     gpu_uuid=$(echo "$line" | cut -d',' -f2 | tr -d ' ')
     gpu_mem=$(echo "$line" | cut -d',' -f3 | tr -d ' ')
@@ -35,9 +75,10 @@ nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,n
         # 获取进程用户
         user=$(ps -o user= -p "$pid" 2>/dev/null)
         # 获取 CPU 和内存占用
-        cpu_mem=$(ps -o %cpu,%mem --no-headers -p "$pid" 2>/dev/null)
-        cpu=$(echo "$cpu_mem" | awk '{print $1}')
-        mem=$(echo "$cpu_mem" | awk '{print $2}')
+        cpu_mem_rss=$(ps -o %cpu=,%mem=,rss= -p "$pid" 2>/dev/null)
+        cpu=$(echo "$cpu_mem_rss" | awk '{print $1}')
+        mem=$(echo "$cpu_mem_rss" | awk '{print $2}')
+        rss_kb=$(echo "$cpu_mem_rss" | awk '{print $3}')
         # 获取进程状态
         stat=$(ps -o stat= -p "$pid" 2>/dev/null | xargs)
         # 获取运行时间
@@ -46,7 +87,11 @@ nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,n
         cmd=$(ps -o args= -p "$pid" 2>/dev/null | cut -c1-$cmd_len)
 
         if [ -n "$user" ]; then
-            printf "$format" "$gpu_id" "$pid" "$user" "${gpu_mem}M" "$mem" "$cpu" "$stat" "$time" "$cmd"
+            tree_kb=$(tree_rss_kb "$pid")
+            printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+                "$tree_kb" "$rss_kb" "$gpu_id" "$pid" "$user" "$gpu_mem" \
+                "$mem" "$cpu" "$stat" "$time" "$cmd"
         fi
     fi
-done
+done < <(nvidia-smi --query-compute-apps=pid,gpu_uuid,used_memory --format=csv,noheader,nounits 2>/dev/null)
+) | sort -t $'\t' -k1,1nr
