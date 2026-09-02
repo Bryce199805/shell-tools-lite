@@ -16,10 +16,10 @@ else
 fi
 
 # 使用 printf 格式化输出
-format="%-3s %-7s %-12s %-7s %-8s %-8s %-5s %-5s %-5s %-11s %s\n"
+format="%-3s %-7s %-12s %-7s %-7s %-7s %-5s %-5s %-5s %-11s %s\n"
 
 # 打印表头
-printf "$format" "GPU" "PID" "USER" "GMEM" "SELF-RAM" "TREE-RAM" "MEM%" "CPU%" "STAT" "TIME" "CMD"
+printf "$format" "GPU" "PID" "USER" "GMEM" "RAM" "RAM+" "MEM%" "CPU%" "STAT" "TIME" "CMD"
 echo "$separator"
 
 # 将 KiB 转为便于比较的 IEC 单位。
